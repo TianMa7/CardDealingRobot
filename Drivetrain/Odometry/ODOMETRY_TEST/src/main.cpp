@@ -1,13 +1,12 @@
 #pragma region VEXcode Generated Robot Configuration
 // Make sure all required headers are included.
+#include "vex.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
 
-
-#include "vex.h"
 
 using namespace vex;
 
@@ -111,7 +110,7 @@ void vexcodeInit() {
 //----------------------------------------------------------------------------
 
 // Include the IQ Library
-#include "iq_cpp.h"
+//#include <iq_cpp.h>
 
 // Allows for easier use of the VEX Library
 using namespace vex;
