@@ -1,3 +1,4 @@
+#include "User.cpp"
 class UserInput : public User {
  public:
   int player[10][2]; // max 10 players, 2 columns

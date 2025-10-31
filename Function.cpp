@@ -1,5 +1,5 @@
-
-
+#include "User.cpp"
+#include "UserInput.cpp"
 class Function : public UserInput {      
   public:
   Function(int numPlayers = 1, int cardsPerPlayer = 0, double spacing = 0.0)
@@ -9,7 +9,7 @@ class Function : public UserInput {
   void trackPlayerCard()
   {
   for (int i = 0; i < getCardsPerPlayer()*getPlayerCount(); i++){
-    for (int j = 0; j < getCardsPerPlayer; j++){
+    for (int j = 0; j < getCardsPerPlayer(); j++){
       int temp = randomPlayer();
       if(player[temp][1] > 0){
         suspendCard();
