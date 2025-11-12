@@ -12,30 +12,33 @@ touchled TouchLED(1);
 colorsensor Colour(11);
 brain Brain;
 
-class EndProgram : public Distribution {
+class EndProgram : public Distribution
+{
 public:
     // Constructor that passes Odometry reference to the parent (Distribution)
     EndProgram(Odometry &o) : Distribution(o) {}
 
-    void ShutDown() {   
-        while (TouchLED.pressing()){};
-        while (!TouchLED.pressing()){};
+    void ShutDown()
+    {
+        while (TouchLED.pressing())
+        {
+        };
+        while (!TouchLED.pressing())
+        {
+        };
 
-        if (!Colour.isNearObject()) {
+        if (!Colour.isNearObject())
+        {
             Brain.Screen.clearScreen();
             Brain.Screen.print("No card left in the deck\nNow shutting down\n");
             wait(2, seconds);
             Brain.programStop();
-        } else {
+        }
+        else
+        {
             Brain.Screen.clearScreen();
             Brain.Screen.print("%d cards are left in the deck\n", countRemainingCards());
             wait(2, seconds);
         }
     }
 };
-
-
-
-
-
-
