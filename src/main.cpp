@@ -155,10 +155,10 @@ void UserInfo::adaptCenter(int radius)
 void Movement::moveTo(float centerX, float centerY, float finalAngle, float speed = 100)
 {
   const int lastRadius = 10; // cm radius of arc to turn
-  int lastSpeed = speed;     // int used to smooth speed
   const int distError = 3;   // acceptable cm error
   const int angleError = 5;
   float deltaAngle = normalizeAngle(findTangent(centerX, centerY, lastRadius), 270);
+  int lastSpeed = speed; // int used to smooth speed
   float speedRatio = arcRatio(lastRadius);
 
   if (hypot((location[1] - centerY), (location[0] - centerX)) < (distError + lastRadius)) // if we are too close, end function
@@ -222,6 +222,7 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
   MotorRight.setVelocity(lastSpeed * speedRatio, percent);
   while (finalAngleCheck(finalAngle, angleError))
   {
+    lastSpeed *= (fabs(deltaAngle) / 180);
     locationUpdate();
   }
 
@@ -278,8 +279,8 @@ void Movement::driveStraight(double rightMotorSpeed, double leftMotorSpeed)
 void Movement::spinToDegree(double motorSpeed, double angle)
 {
   // ODOMETRY DOES NOT MATTER FOR THIS
-
-  const float angleError = 5;
+  motorSpeed -=5; //subtract five because of velocity adjustment formula
+  const float angleError = 2;
   float deltaAngle = normalizeAngle(angle, 180); // finds the angle needed to turn to the spot
 
   MotorLeft.setVelocity(motorSpeed, percent);
@@ -290,20 +291,40 @@ void Movement::spinToDegree(double motorSpeed, double angle)
   {
     return;
   }
-  if (deltaAngle < 0) // turn cw
-  {
-    MotorLeft.spin(forward);
-    MotorRight.spin(reverse);
-  }
-  else
-  {
-    MotorLeft.spin(reverse);
-    MotorRight.spin(forward);
-  }
+  // if (deltaAngle < 0) // turn cw
+  // {
+  //   MotorLeft.spin(forward);
+  //   MotorRight.spin(reverse);
+  // }
+  // else
+  // {
+  //   MotorLeft.spin(reverse);
+  //   MotorRight.spin(forward);
+  // }
 
   while (abs(deltaAngle) > angleError)
   {
     deltaAngle = normalizeAngle(angle, 180);
+
+    // MotorLeft.setVelocity(motorSpeed*(fabs(deltaAngle)/180)+5, percent);
+    // MotorRight.setVelocity(motorSpeed*(fabs(deltaAngle)/180)+5, percent);
+    //PLSPLSPLSPLSPLSPLSPLSPSLSPLS WORK 
+    if (fabs(deltaAngle)<10)//Slowdown if we are close
+    {
+      MotorLeft.setVelocity(10, percent);
+      MotorRight.setVelocity(10, percent);
+    }
+
+    if (deltaAngle < 0) // turn cw
+    {
+      MotorLeft.spin(forward);
+      MotorRight.spin(reverse);
+    }
+    else
+    {
+      MotorLeft.spin(reverse);
+      MotorRight.spin(forward);
+    }
   }
 
   MotorLeft.stop();
@@ -548,9 +569,9 @@ int Control::askYesNo()
   bool answered = false;
   int result = 0;
   Brain.Screen.newLine();
-  Brain.Screen.print("Left = Yes");
+  Brain.Screen.print("Right = Yes");
   Brain.Screen.newLine();
-  Brain.Screen.print("Right = No");
+  Brain.Screen.print("Left = No");
 
   while (!answered)
   {
@@ -741,11 +762,10 @@ void Distribution::spinDistribution()
 
   while (running)
   {
-    for(int i = 0; i < totalPlayers; i++)
+    for (int i = 0; i < totalPlayers; i++)
     {
-      if(!running)
+      if (!running)
       {
-
       }
       else
       {
@@ -761,7 +781,7 @@ void Distribution::spinDistribution()
         Brain.Screen.newLine();
         Brain.Screen.print("Remaining: %d", countRemainingCards());
 
-        if(countRemainingCards() == 0)
+        if (countRemainingCards() == 0)
         {
           running = false;
         }
