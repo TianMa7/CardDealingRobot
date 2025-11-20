@@ -115,11 +115,9 @@ private:
     }
   }
 
-  float smooth(float difference)
+  float smooth(float difference, float a, float b)
   {
       // Simple proportional controller
-    float a = 60.0;
-    float b = 5.0;
     float percentReturn = (100*difference + (a*b))/(100*(difference + a));
 
     return percentReturn;

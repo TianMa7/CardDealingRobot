@@ -236,7 +236,7 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
   // Enters final arc to drive in
   while (finalAngleCheck(finalAngle, angleError))
   {
-    lastSpeed *= smooth(fabs(finalAngle - getHeading()));
+    lastSpeed *= smooth(fabs(normalizeAngle(finalAngle, 360)), 40, 5);
     MotorLeft.setVelocity(lastSpeed, percent);
     MotorRight.setVelocity(lastSpeed * speedRatio, percent);
     locationUpdate();
@@ -302,7 +302,7 @@ void Movement::spinToDegree(double motorSpeed, double angle)
     return; // already at angle
   }
 
-  float smoothFactor = smooth(fabs(deltaAngle));
+  float smoothFactor = smooth(fabs(deltaAngle), 40, 5);
   MotorLeft.setVelocity(motorSpeed * smoothFactor, percent);
   MotorRight.setVelocity(motorSpeed * smoothFactor, percent);
 
@@ -321,7 +321,7 @@ void Movement::spinToDegree(double motorSpeed, double angle)
   while (fabs(deltaAngle) > angleError)
   {
     deltaAngle = normalizeAngle(angle, 180);
-    smoothFactor = smooth(fabs(deltaAngle));
+    smoothFactor = smooth(fabs(deltaAngle), 40, 5);
     if (deltaAngle < 0) // turning cw
     {
       MotorLeft.setVelocity(motorSpeed * smoothFactor, percent);
