@@ -71,7 +71,7 @@ int main()
   Control control = Control(user, move, Brain, Controller, TouchLED);
   Distribution distribution = Distribution(move, user, control, MotorOutput, TouchLED, Optical, Brain);
 
-  bool runProgram = true;
+  bool runProgram = false;
 
   while (runProgram)
   {
@@ -101,6 +101,11 @@ int main()
       runProgram = !control.endProgram();
       wait(500, msec);
     }
+  }
+
+  for(int i = 0; i < 54; i++)
+  {
+    distribution.ejectCard();
   }
 
   Brain.programStop();
@@ -158,7 +163,7 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
   const int distError = 3;   // acceptable cm error
   const int angleError = 5;
   float deltaAngle = normalizeAngle(findTangent(centerX, centerY, lastRadius), 270);
-  int lastSpeed = speed; // int used to smooth speed
+  static float lastSpeed = 0; // int used to smooth speed
   float speedRatio = arcRatio(lastRadius);
 
   if (hypot((location[1] - centerY), (location[0] - centerX)) < (distError + lastRadius)) // if we are too close, end function
@@ -185,6 +190,17 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
   // Wait until we are tanget to circle
   while (fabs(deltaAngle) > angleError)
   {
+    lastSpeed = accelerate(lastSpeed, speed);
+    if (deltaAngle > 0) // needs to turn cww
+    {
+      MotorLeft.setVelocity(speedRatio * lastSpeed, percent);
+      MotorRight.setVelocity(lastSpeed, percent);
+    }
+    else // needs to turn cw
+    {
+      MotorLeft.setVelocity(lastSpeed, percent);
+      MotorRight.setVelocity(lastSpeed * speedRatio, percent);
+    }
     // updates odometry and find a new tangent based on updated location
     locationUpdate();
     deltaAngle = normalizeAngle(findTangent(centerX, centerY, lastRadius), 270);
@@ -218,14 +234,13 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
 
   // Brain.Screen.print("phase4\n");
   // Enters final arc to drive in
-  MotorLeft.setVelocity(lastSpeed, percent);
-  MotorRight.setVelocity(lastSpeed * speedRatio, percent);
   while (finalAngleCheck(finalAngle, angleError))
   {
-    lastSpeed *= (fabs(deltaAngle) / 180);
+    lastSpeed *= smooth(fabs(finalAngle - getHeading()));
+    MotorLeft.setVelocity(lastSpeed, percent);
+    MotorRight.setVelocity(lastSpeed * speedRatio, percent);
     locationUpdate();
   }
-
   // stops motors to ensure that odometry remains accurate)
   // DELETE THESE IF WE ARE NOT STOPPING AFTER MOVE TO
 
@@ -279,52 +294,47 @@ void Movement::driveStraight(double rightMotorSpeed, double leftMotorSpeed)
 void Movement::spinToDegree(double motorSpeed, double angle)
 {
   // ODOMETRY DOES NOT MATTER FOR THIS
-  motorSpeed -=5; //subtract five because of velocity adjustment formula
-  const float angleError = 2;
+  // motorSpeed -=5; //subtract five because of velocity adjustment formula
+  const float angleError = 3;
   float deltaAngle = normalizeAngle(angle, 180); // finds the angle needed to turn to the spot
-
-  MotorLeft.setVelocity(motorSpeed, percent);
-  MotorRight.setVelocity(motorSpeed, percent);
-
-  // check which direction we need to rotate
   if (fabs(deltaAngle) < angleError)
   {
-    return;
+    return; // already at angle
   }
-  // if (deltaAngle < 0) // turn cw
-  // {
-  //   MotorLeft.spin(forward);
-  //   MotorRight.spin(reverse);
-  // }
-  // else
-  // {
-  //   MotorLeft.spin(reverse);
-  //   MotorRight.spin(forward);
-  // }
 
-  while (abs(deltaAngle) > angleError)
+  float smoothFactor = smooth(fabs(deltaAngle));
+  MotorLeft.setVelocity(motorSpeed * smoothFactor, percent);
+  MotorRight.setVelocity(motorSpeed * smoothFactor, percent);
+
+  // check which direction we need to rotate
+  if (deltaAngle < 0) // turn cw
+  {
+    MotorLeft.spin(forward);
+    MotorRight.spin(reverse);
+  }
+  else
+  {
+    MotorLeft.spin(reverse);
+    MotorRight.spin(forward);
+  }
+
+  while (fabs(deltaAngle) > angleError)
   {
     deltaAngle = normalizeAngle(angle, 180);
-
-    // MotorLeft.setVelocity(motorSpeed*(fabs(deltaAngle)/180)+5, percent);
-    // MotorRight.setVelocity(motorSpeed*(fabs(deltaAngle)/180)+5, percent);
-    //PLSPLSPLSPLSPLSPLSPLSPSLSPLS WORK 
-    if (fabs(deltaAngle)<10)//Slowdown if we are close
+    smoothFactor = smooth(fabs(deltaAngle));
+    if (deltaAngle < 0) // turning cw
     {
-      MotorLeft.setVelocity(10, percent);
-      MotorRight.setVelocity(10, percent);
+      MotorLeft.setVelocity(motorSpeed * smoothFactor, percent);
+      MotorRight.setVelocity(motorSpeed * smoothFactor * -1, percent);
     }
-
-    if (deltaAngle < 0) // turn cw
+    else // turning ccw
     {
-      MotorLeft.spin(forward);
-      MotorRight.spin(reverse);
+      MotorLeft.setVelocity(motorSpeed * smoothFactor * -1, percent);
+      MotorRight.setVelocity(motorSpeed * smoothFactor, percent);
     }
-    else
-    {
-      MotorLeft.spin(reverse);
-      MotorRight.spin(forward);
-    }
+    // MotorLeft.setVelocity(motorSpeed * smoothFactor, percent);
+    // MotorRight.setVelocity(motorSpeed * smoothFactor, percent);
+    // PLSPLSPLSPLSPLSPLSPLSPSLSPLS WORK
   }
 
   MotorLeft.stop();
@@ -600,13 +610,12 @@ void Distribution::ejectCard()
   MotorOutput.setVelocity(100, percent);
 
   MotorOutput.spin(reverse);
-  while (fabs(MotorOutput.position(turns) * 200) < 95)
+  while (fabs(MotorOutput.position(turns) * 200) < 104)
   {
-    wait(10, msec);
   }
 
   MotorOutput.spin(forward);
-  wait(500, msec);
+  wait(225, msec);
   MotorOutput.stop();
   MotorOutput.setPosition(0, degrees);
 }
@@ -731,6 +740,8 @@ void Distribution::locDistribution()
   }
   Brain.Screen.newLine();
   Brain.Screen.print("Returning home...");
+  move.moveTo(0, -10, 0, speed);
+
   // driveTo(home[0], home[1], 0);
   wait(500, msec);
   Brain.Screen.clearScreen();
@@ -772,7 +783,7 @@ void Distribution::spinDistribution()
         control.resetScreen();
         Brain.Screen.print("Spin to P%d", playerArray[i]);
 
-        move.spinToDegree(50, fmod(angleIncrement * playerArray[i], 360));
+        move.spinToDegree(100, fmod(angleIncrement * playerArray[i], 360));
         Brain.Screen.newLine();
         Brain.Screen.print("Ejecting...");
         ejectCard();

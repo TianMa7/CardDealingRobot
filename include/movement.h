@@ -115,18 +115,30 @@ private:
     }
   }
 
-  // void smooth(int difference, int &speed)
-  // {
-  //   int p = 1;
-  //   int speedInterval = p * (difference);
+  float smooth(float difference)
+  {
+      // Simple proportional controller
+    float a = 60.0;
+    float b = 5.0;
+    float percentReturn = (100*difference + (a*b))/(100*(difference + a));
 
-  //   speed += speedInterval;
+    return percentReturn;
 
-  //   if(abs(speed) > 100)
-  //   {
-  //     speed = (speed/100) * 100;
-  //   }
-  // }
+    //(100x + ab)/(100(x + a))
+  }
+
+  float accelerate(float currentSpeed, float targetSpeed)
+  {
+    int interval = 5;
+    if(currentSpeed >= targetSpeed)
+    {
+      return targetSpeed;
+    }
+    else
+    {
+      return currentSpeed += 1;
+    }
+  }
 };
 
 #endif

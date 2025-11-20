@@ -25,8 +25,6 @@ private:
     //private functions
     void randomPlayer(int players[], int size);
 
-    void ejectCard();
-
     bool playerHasCards(int playerIndex)
     {
         return user.getCardsLeft(playerIndex) > 0;
@@ -38,7 +36,7 @@ public:
     {
     }
 
-
+    void ejectCard();
     // bool isBlueCard()
     // {
 
