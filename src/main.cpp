@@ -73,15 +73,17 @@ int main()
 
   bool runProgram = true;
   int restartMode = 0;
+  bool lastLocBased = true;
 
   while (runProgram)
   {
-    bool locBased = true;
-
+    bool locBased = lastLocBased;
     if (restartMode == 0 || restartMode == 1)
     {
+      control.resetScreen();
       bool isRigged = false;
       locBased = control.controllerSetup(user);
+      lastLocBased = locBased;
 
       if (locBased)
       {
@@ -119,9 +121,6 @@ int main()
   Brain.programStop();
 }
 
-
-// UserInfo Class Public
-
 float UserInfo::findMean(float arr[], int n) const
 {
   int totalCount = 0;
@@ -132,7 +131,6 @@ float UserInfo::findMean(float arr[], int n) const
   totalCount /= n;
   return totalCount;
 }
-
 
 void UserInfo::resetCards()
 {
@@ -302,7 +300,7 @@ void Movement::driveStraight(double rightMotorSpeed, double leftMotorSpeed)
 void Movement::spinToDegree(double motorSpeed, double angle)
 {
   // ODOMETRY DOES NOT MATTER FOR THIS
-  motorSpeed -=5; //subtract five because of velocity adjustment formula
+  motorSpeed -= 5; // subtract five because of velocity adjustment formula
   const float angleError = 2;
   float deltaAngle = normalizeAngle(angle, 180); // finds the angle needed to turn to the spot
 
@@ -331,8 +329,8 @@ void Movement::spinToDegree(double motorSpeed, double angle)
 
     // MotorLeft.setVelocity(motorSpeed*(fabs(deltaAngle)/180)+5, percent);
     // MotorRight.setVelocity(motorSpeed*(fabs(deltaAngle)/180)+5, percent);
-    //PLSPLSPLSPLSPLSPLSPLSPSLSPLS WORK 
-    if (fabs(deltaAngle)<10)//Slowdown if we are close
+    // PLSPLSPLSPLSPLSPLSPLSPSLSPLS WORK
+    if (fabs(deltaAngle) < 10) // Slowdown if we are close
     {
       MotorLeft.setVelocity(10, percent);
       MotorRight.setVelocity(10, percent);
@@ -442,7 +440,6 @@ bool Control::controllerSetup(UserInfo &userManager)
   Brain.Screen.print("FUp = confirm");
   Brain.Screen.newLine();
   Brain.Screen.print("Check = confirm");
-
 
   while (!cardConfirmed)
   {
@@ -585,22 +582,20 @@ bool Control::endProgram(int &restartMode)
       resetScreen();
       Brain.Screen.print("Start over setup?");
       Brain.Screen.newLine();
-      Brain.Screen.print("Left = Yes (redo setup)");
-      Brain.Screen.newLine();
-      Brain.Screen.print("Right = No (skip setup)");
 
-      int redoSetup = askYesNo(); 
+      int redoSetup = askYesNo();
 
       if (redoSetup == 1)
       {
-        restartMode = 1; 
+        restartMode = 1;
       }
       else
       {
-        restartMode = 2; 
+        restartMode = 2;
+        user.initializeUsers(user.getTotalUsers(), user.getCardPerPlayer());
       }
 
-      endProgram = false; 
+      endProgram = false;
     }
     else
     {
@@ -620,9 +615,9 @@ int Control::askYesNo()
   bool answered = false;
   int result = 0;
   Brain.Screen.newLine();
-  Brain.Screen.print("Right = Yes");
+  Brain.Screen.print("Left = Yes");
   Brain.Screen.newLine();
-  Brain.Screen.print("Left = No");
+  Brain.Screen.print("Right = No");
 
   while (!answered)
   {
@@ -760,7 +755,7 @@ void Distribution::locDistribution()
       else
       {
         control.resetScreen();
-        Brain.Screen.print("Driving to P%d", playerArray[i]);
+        Brain.Screen.print("Driving to P%d", playerArray[i] + 1);
 
         move.moveTo(user.getUserX(playerArray[i]), user.getUserY(playerArray[i]), user.getUserHeading(playerArray[i]), speed);
         // driveTo(px, py, BrainInertial.heading(degrees) + 90);
@@ -823,7 +818,7 @@ void Distribution::spinDistribution()
       else
       {
         control.resetScreen();
-        Brain.Screen.print("Spin to P%d", playerArray[i]);
+        Brain.Screen.print("Spin to P%d", playerArray[i] + 1);
 
         move.spinToDegree(50, fmod(angleIncrement * playerArray[i], 360));
         Brain.Screen.newLine();
