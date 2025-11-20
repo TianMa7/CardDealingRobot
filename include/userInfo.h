@@ -88,7 +88,7 @@ public:
     }
 
     float findMean(float arr[], int n) const;
-
+    void resetCards();
     void adaptCenter(int radius); // readjusts data for location based dealing
 };
 #endif
