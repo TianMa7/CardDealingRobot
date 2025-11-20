@@ -36,7 +36,7 @@ public:
     }
 
 
-    bool endProgram();
+    bool endProgram(int &restartMode);
 private:
     UserInfo &user;
     Movement &move;
