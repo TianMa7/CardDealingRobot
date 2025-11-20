@@ -77,7 +77,7 @@ public:
         users[userID]--;
     }
 
-    int getCardsLeft(int idx)
+    int getCardsLeft(int idx) const
     {
         return users[idx];
     }
@@ -85,6 +85,11 @@ public:
     int getTotalUsers() const
     {
         return totalUsers;
+    }
+
+    int getCardPerPlayer() const
+    {
+        return cardsPerPlayer;
     }
 
     float findMean(float arr[], int n) const;

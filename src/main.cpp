@@ -66,7 +66,7 @@ int main()
   // Initialize robot and objects
   configureAllSensors();
 
-  Movement move = Movement(MotorLeft, MotorRight, BrainInertial);
+  Movement move = Movement(MotorLeft, MotorRight, BrainInertial, Bumper);
   UserInfo user = UserInfo(&move);
   Control control = Control(user, move, Brain, Controller, TouchLED);
   Distribution distribution = Distribution(move, user, control, MotorOutput, TouchLED, Optical, Brain);
@@ -336,6 +336,10 @@ void Movement::spinToDegree(double motorSpeed, double angle)
 
   while (fabs(deltaAngle) > angleError)
   {
+    if(Bumper.pressing())
+    {
+      return;
+    }
     deltaAngle = normalizeAngle(angle, 180);
     smoothFactor = smooth(fabs(deltaAngle), 40, 5);
     if (deltaAngle < 0) // turning cw

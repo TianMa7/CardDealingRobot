@@ -13,10 +13,11 @@ public:
   Movement(
       motor &Left,
       motor &Right,
-      inertial &IMU)
+      inertial &IMU, bumper &b)
       : MotorLeft(Left),
         MotorRight(Right),
-        BrainInertial(IMU)
+        BrainInertial(IMU),
+        Bumper(b)
   {
     location[0] = 0;
     location[1] = 1;
@@ -55,6 +56,7 @@ private:
   motor &MotorLeft;
   motor &MotorRight;
   inertial &BrainInertial;
+  bumper &Bumper;
 
   double location[2] = {0, 0};            // x, y
   const double wheelCircumference = 20.0; // cm
