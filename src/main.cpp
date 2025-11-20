@@ -72,39 +72,53 @@ int main()
   Distribution distribution = Distribution(move, user, control, MotorOutput, TouchLED, Optical, Brain);
 
   bool runProgram = true;
+  int restartMode = 0;
 
   while (runProgram)
   {
-    bool isRigged = false;
-    bool locBased = control.controllerSetup(user);
-    if (locBased)
+    bool locBased = true;
+
+    if (restartMode == 0 || restartMode == 1)
     {
-      control.recordAllPlayerLocations(move, user);
-    }
-    control.resetScreen();
-    Brain.Screen.print("Starting...");
-    while (runProgram)
-    {
+      bool isRigged = false;
+      locBased = control.controllerSetup(user);
+
       if (locBased)
       {
-        wait(1, seconds);
-        bool running = true;
-        distribution.locDistribution();
-        running = false;
+        control.recordAllPlayerLocations(move, user);
       }
-      else
-      {
-        wait(1, seconds);
-        distribution.spinDistribution();
-      }
-
-      runProgram = !control.endProgram();
-      wait(500, msec);
     }
+
+    control.resetScreen();
+    Brain.Screen.print("Starting...");
+    wait(1, seconds);
+
+    if (locBased)
+    {
+      distribution.locDistribution();
+    }
+    else
+    {
+      distribution.spinDistribution();
+    }
+
+    bool stop = control.endProgram(restartMode);
+
+    if (stop || restartMode == 0)
+    {
+      runProgram = false;
+    }
+    else
+    {
+      runProgram = true;
+    }
+
+    wait(200, msec);
   }
 
   Brain.programStop();
 }
+
 
 // UserInfo Class Public
 
@@ -117,6 +131,15 @@ float UserInfo::findMean(float arr[], int n) const
   }
   totalCount /= n;
   return totalCount;
+}
+
+
+void UserInfo::resetCards()
+{
+  for (int i = 0; i < totalUsers; i++)
+  {
+    users[i] = cardsPerPlayer;
+  }
 }
 
 void UserInfo::adaptCenter(int radius)
@@ -341,12 +364,13 @@ bool Control::controllerSetup(UserInfo &userManager)
   resetScreen();
   Brain.Screen.print("Players: %d", players);
   Brain.Screen.newLine();
-  Brain.Screen.print("EUp/>:+  EDown/<:-");
+  Brain.Screen.print("EUp/>:+");
+  Brain.Screen.newLine();
+  Brain.Screen.print("EDown/<:-");
   Brain.Screen.newLine();
   Brain.Screen.print("FUp = location");
   Brain.Screen.newLine();
   Brain.Screen.print("Checkmark = spin");
-
   bool locBased = false;
   while (!playerConfirmed)
   {
@@ -411,11 +435,14 @@ bool Control::controllerSetup(UserInfo &userManager)
   cards = 54 / players;
   Brain.Screen.print("Num of Cards: %d", cards);
   Brain.Screen.newLine();
-  Brain.Screen.print("EUp/>:+  EDown/<:-");
+  Brain.Screen.print("EUp/>:+");
+  Brain.Screen.newLine();
+  Brain.Screen.print("EDown/<:-");
   Brain.Screen.newLine();
   Brain.Screen.print("FUp = confirm");
   Brain.Screen.newLine();
   Brain.Screen.print("Check = confirm");
+
 
   while (!cardConfirmed)
   {
@@ -467,7 +494,6 @@ void Control::recordAllPlayerLocations(Movement &move, UserInfo &userManager)
   Brain.Screen.newLine();
   Brain.Screen.print("FUp = save pos");
   Brain.Screen.newLine();
-  Brain.Screen.print("Drive & press FUp to save");
   int totalUsers = userManager.getTotalUsers();
   for (int i = 0; i < totalUsers; i++)
   {
@@ -519,47 +545,72 @@ void Control::recordAllPlayerLocations(Movement &move, UserInfo &userManager)
   }
 
   resetScreen();
-  Brain.Screen.print("All positions saved");
+  Brain.Screen.print("Positions saved");
   wait(800, msec);
 }
 
-bool Control::endProgram()
+bool Control::endProgram(int &restartMode)
 {
-  // can only rig the first person;
   resetScreen();
   Brain.Screen.print("Dealing Ended");
   Brain.Screen.newLine();
-  Brain.Screen.print("Press touch sensor");
+  Brain.Screen.print("Press TouchLED");
+
   while (TouchLED.pressing())
   {
-  };
+  }
   while (!TouchLED.pressing())
   {
-  };
+  }
   bool endProgram = true;
+  restartMode = 0;
 
   if (!Optical.isNearObject())
   {
     resetScreen();
     Brain.Screen.print("No cards left");
     Brain.Screen.newLine();
-    Brain.Screen.print("Now shutting down");
+    Brain.Screen.print("Shutting down...");
     wait(2, seconds);
   }
   else
   {
     resetScreen();
-    Brain.Screen.print("Repeat process?");
-    int shutdown = askYesNo();
-    if (shutdown == 1)
+    Brain.Screen.print("Repeat dealing?");
+    int repeat = askYesNo();
+    if (repeat == 1)
+    {
+      user.resetCards();
+
+      resetScreen();
+      Brain.Screen.print("Start over setup?");
+      Brain.Screen.newLine();
+      Brain.Screen.print("Left = Yes (redo setup)");
+      Brain.Screen.newLine();
+      Brain.Screen.print("Right = No (skip setup)");
+
+      int redoSetup = askYesNo(); 
+
+      if (redoSetup == 1)
+      {
+        restartMode = 1; 
+      }
+      else
+      {
+        restartMode = 2; 
+      }
+
+      endProgram = false; 
+    }
+    else
     {
       resetScreen();
       Brain.Screen.print("Shutting down...");
       wait(1500, msec);
       Brain.programStop();
     }
-    endProgram = false;
   }
+
   return endProgram;
 }
 
@@ -677,7 +728,9 @@ void Distribution::locDistribution()
   allDone = false;
 
   control.resetScreen();
-  Brain.Screen.print("Waiting for touch LED...");
+  Brain.Screen.print("Waiting for");
+  Brain.Screen.newLine();
+  Brain.Screen.print("TouchLED...");
 
   while (TouchLED.pressing())
     wait(20, msec);
@@ -718,8 +771,8 @@ void Distribution::locDistribution()
         ejectCard();
         user.cardGivenTo(playerArray[i]);
 
-        Brain.Screen.newLine();
-        Brain.Screen.print("Remaining cards: %d", countRemainingCards());
+        // Brain.Screen.newLine();
+        // Brain.Screen.print("Remaining cards: %d", countRemainingCards());
 
         if (countRemainingCards() == 0)
         {
@@ -740,7 +793,7 @@ void Distribution::locDistribution()
 void Distribution::spinDistribution()
 {
   control.resetScreen();
-  Brain.Screen.print("Touch LED ");
+  Brain.Screen.print("TouchLED ");
   Brain.Screen.newLine();
   Brain.Screen.print("to start...");
 
