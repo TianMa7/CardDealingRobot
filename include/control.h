@@ -35,8 +35,8 @@ public:
         Brain.Screen.clearLine();
     }
 
+    bool endProgram(int &restartMode);
 
-    bool endProgram();
 private:
     UserInfo &user;
     Movement &move;
