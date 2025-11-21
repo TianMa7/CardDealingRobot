@@ -179,7 +179,7 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
   const int distError = 3;   // acceptable cm error
   const int angleError = 5;
   float deltaAngle = normalizeAngle(findTangent(centerX, centerY, lastRadius), 270);
-  static float lastSpeed = 0; // int used to smooth speed
+  float lastSpeed = 0; // int used to smooth speed
   float speedRatio = arcRatio(lastRadius);
 
   if (hypot((location[1] - centerY), (location[0] - centerX)) < (distError + lastRadius)) // if we are too close, end function
@@ -222,9 +222,11 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
     deltaAngle = normalizeAngle(findTangent(centerX, centerY, lastRadius), 270);
   }
 
+  lastSpeed = speed;
   MotorLeft.setVelocity(lastSpeed, percent);
   MotorRight.setVelocity(lastSpeed, percent);
 
+  // int courseCorrection = 1 - smooth(deltaAngle, 20, 5);
   while (hypot((location[1] - centerY), (location[0] - centerX)) > (distError + lastRadius) && abs(deltaAngle) < 90)
   {
     if (fabs(deltaAngle) < angleError) // on course
@@ -246,13 +248,14 @@ void Movement::moveTo(float centerX, float centerY, float finalAngle, float spee
     // update odom
     locationUpdate();
     deltaAngle = normalizeAngle(findTangent(centerX, centerY, lastRadius), 270);
+    // courseCorrection = 1 - smooth(abs(deltaAngle), 100, 0);
   }
 
   // Brain.Screen.print("phase4\n");
   // Enters final arc to drive in
   while (finalAngleCheck(finalAngle, angleError))
   {
-    lastSpeed *= smooth(fabs(normalizeAngle(finalAngle, 360)), 40, 5);
+    // lastSpeed *= smooth(fabs(normalizeAngle(finalAngle, 359)), 40, 5);
     MotorLeft.setVelocity(lastSpeed, percent);
     MotorRight.setVelocity(lastSpeed * speedRatio, percent);
     locationUpdate();
@@ -315,6 +318,8 @@ void Movement::spinToDegree(double motorSpeed, double angle)
   float deltaAngle = normalizeAngle(angle, 180); // finds the angle needed to turn to the spot
   if (fabs(deltaAngle) < angleError)
   {
+    MotorLeft.stop();
+    MotorRight.stop();
     return; // already at angle
   }
 
@@ -336,12 +341,15 @@ void Movement::spinToDegree(double motorSpeed, double angle)
 
   while (fabs(deltaAngle) > angleError)
   {
-    if(Bumper.pressing())
-    {
-      return;
-    }
     deltaAngle = normalizeAngle(angle, 180);
     smoothFactor = smooth(fabs(deltaAngle), 40, 5);
+    if (Bumper.pressing())
+    {
+      MotorLeft.stop();
+      MotorRight.stop();
+      return;
+    }
+
     if (deltaAngle < 0) // turning cw
     {
       MotorLeft.setVelocity(motorSpeed * smoothFactor, percent);
@@ -360,7 +368,6 @@ void Movement::spinToDegree(double motorSpeed, double angle)
   MotorLeft.stop();
   MotorRight.stop();
 }
-
 
 // Control class public
 bool Control::controllerSetup(UserInfo &userManager)
@@ -652,6 +659,12 @@ int Control::askYesNo()
 // Distribution class Private functions
 void Distribution::ejectCard()
 {
+  if (Bumper.pressing())
+  {
+    MotorLeft.stop();
+    MotorRight.stop();
+    return;
+  }
   MotorOutput.setPosition(0, turns);
   MotorOutput.setVelocity(100, percent);
 
@@ -763,7 +776,7 @@ void Distribution::locDistribution()
       else
       {
         control.resetScreen();
-        Brain.Screen.print("Driving to P%d", playerArray[i]+1);
+        Brain.Screen.print("Driving to P%d", playerArray[i] + 1);
 
         move.moveTo(user.getUserX(playerArray[i]), user.getUserY(playerArray[i]), user.getUserHeading(playerArray[i]), speed);
         // driveTo(px, py, BrainInertial.heading(degrees) + 90);
@@ -787,7 +800,7 @@ void Distribution::locDistribution()
   }
   Brain.Screen.newLine();
   Brain.Screen.print("Returning home...");
-  move.moveTo(0, -10, 0, speed);
+  move.moveTo(0, -10, 0, 50);
 
   // driveTo(home[0], home[1], 0);
   wait(500, msec);
@@ -827,8 +840,11 @@ void Distribution::spinDistribution()
       }
       else
       {
+        while (Bumper.pressing())
+        {
+        }
         control.resetScreen();
-        Brain.Screen.print("Spin to P%d", playerArray[i]+1);
+        Brain.Screen.print("Spin to P%d", playerArray[i] + 1);
 
         move.spinToDegree(100, fmod(angleIncrement * playerArray[i], 360));
         Brain.Screen.newLine();
