@@ -2,11 +2,11 @@
 
 <img src="projectInfo/groupCardDealer.jpg" alt="Group Photo" width="600" />
 
-An automated card dealing robot designed to smoothly and accurately distribute playing cards to multiple players. Originally created as a Mechatronics Engineering project at the University of Waterloo, **CardIn** acts as an impartial robotic dealer to enhance game nights by providing hands-free, reliable, and repeatable card distribution.
+An automated card dealing robot designed to smoothly and accurately distribute playing cards to multiple players. Originally created as a Mechatronics Engineering project at the University of Waterloo.
 
 *Note: This README was generated using AI to provide a concise project summary. The authentic, full technical report can be accessed via the link below.*
 
-<a href="projectInfo/Robot%20Project%20Report.docx" download>
+<a href="https://github.com/TianMa7/CardDealingRobot/raw/main/projectInfo/Robot%20Project%20Report.docx" download>
   <button style="padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 5px; background-color: #007BFF; color: white; border: none;">
     📖 Read More / Download Project Report
   </button>
